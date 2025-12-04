@@ -2,14 +2,12 @@
 
 import numpy as np
 import scipy.signal as sig
-from aoc_util import run_aoc, np_raw_table
+from funcy import autocurry
+
+from aoc_util import np_raw_table, run_aoc
 
 
-def setup(input):
-    return np.equal(np_raw_table(input), ord("@")).astype(np.int8)
-
-
-def aoc04(grid):
+def aoc04(grid: np.typing.NDArray[np.int8]):
     WEIGHTS = np.array([[-1, -1, -1], [-1, 4, -1], [-1, -1, -1]], dtype=np.int8)
     takeable = sig.convolve(grid, WEIGHTS, mode="same") > 0
     yield np.sum(takeable)
@@ -26,4 +24,4 @@ def aoc04(grid):
 
 
 if __name__ == "__main__":
-    run_aoc(aoc04, transform=setup)
+    run_aoc(aoc04, apply=autocurry(np_raw_table)(cmp="@", dtype=np.int8))

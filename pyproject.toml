@@ -1,8 +1,11 @@
 [project]
 name = "aoc-2025"
 version = "0.1.0"
-description = "Add your description here"
+authors = [{name="Jürgen Strobel", email="juergen+aoc2025@strobel.info"}]
+description = "Advent of Code 2025 personal solutions"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.14"
 dependencies = [
     "funcy>=2.0",
@@ -15,4 +18,14 @@ dependencies = [
 dev = [
     "rich>=14.2.0",
     "ruff>=0.14.7",
+]
+
+[tool.ruff.lint]
+select = [
+    "B",  # flake8-bugbear
+    "E",  # pycodestyle error
+    "F",  # pyflakes
+    "I",  # isort
+    "UP",  # pyupgrade
+    "W",  # pycodestyle warning
 ]

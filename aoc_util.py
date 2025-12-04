@@ -5,8 +5,9 @@ import os
 import sys
 import timeit
 from argparse import ArgumentParser
+from collections.abc import Callable
 from logging import debug, error, info, warn
-from typing import Any, Callable
+from typing import Any
 
 _keep_imports = error, warn, info, debug  # re-export
 _root_logger = logging.getLogger()
@@ -18,6 +19,7 @@ def _fix_lambda(f, default=lambda x: x):
     match f:
         case None:
             return default
+        # probably better to use partial or funcy.autocurry than these
         case (f, *args, kw) if isinstance(kw, dict):
             return lambda input: f(input, *args, **kw)
         case (f, *args):
@@ -72,29 +74,36 @@ def read_pd_table(fn, *args, **kw):
     """Read whitespace separated tabular data to a pandas dataframe"""
     import pandas as pd  # noqa: autoimport
 
-    return pd.read_table(fn, sep=r"\s+", header=None, *args, **kw)
+    return pd.read_table(fn, *args, sep=r"\s+", header=None, **kw)
 
 
-def np_raw_table(input, dtype="uint8", offs=0):
+def np_raw_table(input, dtype="uint8", offs=0, cmp=None):
     """Transform raw tabular data to a 2d np.array"""
     import numpy as np  # noqa: autoimport
 
     input = bytes(input, "ASCII")
     n = input.index(b"\n")
     flat = np.frombuffer(input, dtype=dtype)
-    return (flat.reshape((-1, n + 1))[:, :-1] - offs,)
+    table = flat.reshape((-1, n + 1))[:, :-1] - offs
+    return np.equal(table, ord(cmp)).astype(dtype) if cmp else table
 
 
 def mk_input_reader(
     read=readfile, split=None, apply=None, transform=None
 ) -> Callable[[str], tuple[Any, ...]]:
-    """Returns a function reading and transforming an input file"""
+    """Returns a function reading and optionally parsing an input file
+
+    readfile: filename -> str | Any
+    split: -> various modes to optionally split read input into structures
+    apply: called on all structure elements resulting from split or the whole
+    transform: optionally called in the end -> tuple of arguments to main function
+    """
 
     def get_input(filename: str) -> tuple[Any, ...]:
         input = read(filename)
         match split:
             case None:
-                pass
+                input = apply(input)
             case "fields":
                 input = [apply(x) for x in input.split()]
             case "lines":
@@ -103,12 +112,13 @@ def mk_input_reader(
                 input = [
                     tuple(apply(x) for x in line.split()) for line in input.splitlines()
                 ]
+            case (ls, fs):
+                input = [
+                    tuple(apply(x) for x in line.split(fs)) for line in input.split(ls)
+                ]
             case c:
                 input = [apply(x) for x in input.split(c)]
-        if transform:
-            return transform(input)
-        else:
-            return (input,)
+        return transform(input)
 
     read = _fix_lambda(read)
     apply = _fix_lambda(apply)

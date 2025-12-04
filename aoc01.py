@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 
 import numpy as np
+
 from aoc_util import run_aoc
 
 
-def parse_line(line):
-    return int(line[1:]) * (-1) ** (line[0] == "L")
-
-
-def aoc01(rotations):
+def aoc01(rotations: list[int]):
     positions = np.add.accumulate([50, *rotations])
     zeros = np.logical_not(positions % 100)
     yield np.sum(zeros)
@@ -24,6 +21,6 @@ if __name__ == "__main__":
     run_aoc(
         aoc01,
         split="lines",
-        apply=parse_line,
+        apply=lambda line: int(line[1:]) * (-1) ** (line[0] == "L"),
         np_printoptions=dict(linewidth=120, threshold=100, edgeitems=10),
     )
