@@ -175,7 +175,7 @@ def run_aoc(
     split=None,
     apply=None,
     transform=None,
-    time=(1, "s"),
+    time=(1000, "ms"),
     np_printoptions=None,
 ):
     """Runs puzzle solving generator function aocf with appropriate input
