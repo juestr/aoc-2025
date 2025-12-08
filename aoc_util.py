@@ -77,15 +77,30 @@ def read_pd_table(fn, *args, **kw):
     return pd.read_table(fn, *args, sep=r"\s+", header=None, **kw)
 
 
-def np_raw_table(input, dtype="uint8", offs=0, cmp=None):
-    """Transform raw tabular data to a 2d np.array"""
+def np_raw_table(input, offs=None, cmp=None, dtype="uint8"):
+    """Transform raw tabular data to a 2d np.array
+
+    does:
+    * ascii-encode input to bytes
+    * frombuffer with dtype uint8
+    * reshape using first line
+    optional:
+    * subtract offs
+    * compare to cmp
+    * change dtype
+    """
     import numpy as np  # noqa: autoimport
 
     input = bytes(input, "ASCII")
     n = input.index(b"\n")
-    flat = np.frombuffer(input, dtype=dtype)
-    table = flat.reshape((-1, n + 1))[:, :-1] - offs
-    return np.equal(table, ord(cmp)).astype(dtype) if cmp else table
+    table = np.frombuffer(input, dtype=np.uint8).reshape((-1, n + 1))[:, :-1]
+    if offs:
+        table = table - offs
+    if cmp:
+        table = np.equal(table, cmp)
+    if dtype:
+        table = table.astype(dtype)
+    return table
 
 
 def mk_input_reader(

@@ -24,4 +24,4 @@ def aoc04(grid: np.typing.NDArray[np.int8]):
 
 
 if __name__ == "__main__":
-    run_aoc(aoc04, apply=autocurry(np_raw_table)(cmp="@", dtype=np.int8))
+    run_aoc(aoc04, apply=autocurry(np_raw_table)(cmp=ord("@"), dtype=np.int8))
