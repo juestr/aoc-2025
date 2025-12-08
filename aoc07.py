@@ -5,7 +5,7 @@ import numpy as np
 from aoc_util import np_raw_table, run_aoc
 
 
-def aoc07(grid):
+def aoc07(grid: np.typing.NDArray[bool]):
     splitters = grid[1:]
     beams = grid.astype(int)
     beams[1:] = 0

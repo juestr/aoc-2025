@@ -8,12 +8,12 @@ from funcy import partition_by
 from aoc_util import run_aoc
 
 
-def setup(input):
+def setup(input: str):
     *lines, ops = input.splitlines()
     return lines, ops.split()
 
 
-def aoc06(lines, ops):
+def aoc06(lines: list[str], ops: list[str]):
     xs = np.loadtxt(lines, dtype=int)
     is_add = np.equal(ops, "+")
     yield np.sum(xs[:, is_add]) + np.sum(np.prod(xs[:, ~is_add], axis=0))

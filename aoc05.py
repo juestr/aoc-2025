@@ -6,7 +6,7 @@ import numpy.typing as npt
 from aoc_util import run_aoc
 
 
-def setup(input):
+def setup(input: str):
     p1, p2 = input.split("\n\n")
     return (
         np.fromstring(p1.replace("-", "\n"), sep="\n", dtype=int).reshape((-1, 2)),
