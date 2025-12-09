@@ -211,12 +211,12 @@ def run_aoc(
         nonlocal t1, t2
         if cmdargs.timeit:
             t1, t2 = t2, timeit.default_timer()
-            info(f"🕚 {label}{(t2 - t1) * time[0]:_.3f}{time[1]}\n")
+            info(f"🕚 {label}{(t2 - t1) * time[0]:_.3f} {time[1]}\n")
 
     def total_time(label="Total time: "):
         if cmdargs.timeit:
             t = timeit.default_timer()
-            info(f"🕚{label}{(t - t0) * time[0]:_.3f}{time[1]}\n")
+            info(f"🕚{label}{(t - t0) * time[0]:_.3f} {time[1]}\n")
             info("🎄🎄🎄🎄🎄🎄🎄🎄🎄🎄🎄🎄🎄🎄🎄🎄🎄\n")
 
     t0 = t1 = t2 = timeit.default_timer()
