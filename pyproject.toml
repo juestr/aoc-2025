@@ -13,20 +13,20 @@ dependencies = [
     "numpy>=2.3.5",
     "pandas>=2.3.3",
     "scipy>=1.16.3",
+    "sympy>=1.14.0",
 ]
 
 [dependency-groups]
 dev = [
     "rich>=14.2.0",
-    "ruff>=0.14.7",
+    "ruff>=0.14.8",
 ]
 
 [tool.ruff.lint]
 select = [
-    "B",  # flake8-bugbear
     "E",  # pycodestyle error
-    "F",  # pyflakes
-    "I",  # isort
-    "UP",  # pyupgrade
     "W",  # pycodestyle warning
+    "F",  # pyflakes
+    "B",  # flake8-bugbear
+    "I",  # isort
 ]
