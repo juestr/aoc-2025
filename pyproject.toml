@@ -30,3 +30,6 @@ select = [
     "B",  # flake8-bugbear
     "I",  # isort
 ]
+ignore = [
+    "B905",  # zip without strict
+]
