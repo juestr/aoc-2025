@@ -19,7 +19,7 @@ else
 from funcy import map, lmap, mapcat, lmapcat, pairwise
 import numpy as np
 import pandas as pd
-from aoc_util import run_aoc, error, info, debug, dbg, np_raw_table
+from aoc_util import AOC, run_aoc, error, info, debug, dbg, np_raw_table
 
 def aoc%02d(input):
 
