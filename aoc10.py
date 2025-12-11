@@ -4,56 +4,56 @@ from functools import cache
 from itertools import product
 
 import numpy as np
-from funcy import autocurry, lmap
+from funcy import lmap
 from scipy.optimize import linprog
 
-from aoc_util import run_aoc
+from aoc_util import AOC, run_aoc
 
 
-def parse_line(line):
+def create_machine(line: str):
     def csv(seq):
         return lmap(int, seq[1:-1].split(","))
 
+    def to_mask(seq):
+        return lmap(set(csv(seq)), range(len(lights) - 2))
+
     lights, *buttons, joltage = line.split()
-    return ([c == "#" for c in lights[1:-1]], lmap(csv, buttons), csv(joltage))
+    return (
+        np.array([c == "#" for c in lights[1:-1]]),
+        np.array(lmap(to_mask, buttons)),
+        np.array(csv(joltage)),
+    )
 
 
 def aoc10(
-    lights: list[list[bool]],
-    buttons: list[list[list[int]]],
-    joltages: list[list[int]],
-):
-    @autocurry
-    def to_state(button, n, dtype):
-        s = np.zeros(n, dtype=dtype)
-        s[button] = 1
-        return s
-
+    lights: list[np.typing.NDArray[int, bool]],
+    buttons: list[np.typing.NDArray[(int, int), bool]],
+    joltages: list[np.typing.NDArray[int, int]],
+) -> AOC:
     @cache
     def choices_asc(n):
         return lmap(list, sorted(product((False, True), repeat=n), key=sum))
 
-    def analyze(lights, buttons):
-        toggles = np.array(lmap(to_state(n=len(lights), dtype=bool), buttons))
-        for choice in choices_asc(len(buttons)):
-            if np.all(lights == np.logical_xor.reduce(toggles[choice], axis=0)):
-                return sum(choice)
+    def analyze(lights, btns):
+        for choice in choices_asc(len(btns)):
+            selected = btns[choice]
+            if np.all(lights == np.logical_xor.reduce(selected, axis=0)):
+                return selected.shape[0]
 
-    def analyze2(joltage, buttons):
-        toggles = np.array(lmap(to_state(n=len(joltage), dtype=int), buttons))
+    def analyze2(joltage, btns):
         result = linprog(
-            np.ones(len(buttons)),
-            A_eq=toggles.T,
+            np.ones(len(btns)),
+            A_eq=btns.T,
             b_eq=joltage,
             integrality=1,
             method="highs",
         )
-        assert result.success
-        return int(np.sum(result.x))
+        assert result.success, "linprog failed"
+        return int(result.fun)
 
     yield sum(map(analyze, lights, buttons))
     yield sum(map(analyze2, joltages, buttons))
 
 
 if __name__ == "__main__":
-    run_aoc(aoc10, split="lines", apply=parse_line, transform=lambda m: zip(*m))
+    run_aoc(aoc10, split="lines", apply=create_machine, transform=lambda m: zip(*m))
