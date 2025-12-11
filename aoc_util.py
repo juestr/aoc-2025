@@ -1,25 +1,30 @@
 """AOC puzzle solving support"""
 
+import abc
 import logging
 import os
 import sys
 import timeit
 from argparse import ArgumentParser
-from collections.abc import Callable
 from logging import debug, error, info, warn
 from typing import Any
 
 _keep_imports = error, warn, info, debug  # re-export
 _root_logger = logging.getLogger()
 
+# SESSION = os.environ.get("SESSION")
+LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
 AOC_INTERACTIVE = int(os.environ.get("AOC_INTERACTIVE") or 0)
 
+type AOC[T = int] = abc.Generator[T]
 
-def _fix_lambda(f, default=lambda x: x):
+
+def _fix_lambda(f=None, default=lambda x: x):
+    """Support flexible lambda argument specification"""
+
     match f:
         case None:
             return default
-        # probably better to use partial or funcy.autocurry than these
         case (f, *args, kw) if isinstance(kw, dict):
             return lambda input: f(input, *args, **kw)
         case (f, *args):
@@ -28,33 +33,56 @@ def _fix_lambda(f, default=lambda x: x):
             return f
 
 
-def dbg(*args, s=" ", r=False, p=False, m=None, t=None, l=logging.DEBUG, apply=None):  # noqa: E741
-    """Simple logging.debug helper"""
+# --- exported utils not directly related to the cli runner ---
+
+
+def dbg(
+    *values,
+    s=" ",
+    r=False,
+    p=False,
+    m: str = None,
+    t: str = None,
+    l=logging.DEBUG,  # noqa: E741
+    apply=None,
+):  # noqa: E741
+    """Simple debug logging helper
+
+    *values: values to log, can be Any
+    t: print a title on line above
+    m: print a message prefix before values
+    s: value separator
+    r: use repr instead of str
+    p: use pprint
+    l: logging.LEVEL
+    apply: map values (lazy, not called if loglevel not sufficient)
+    """
+
     if _root_logger.isEnabledFor(l):
-        n = len(args)
+        n = len(values)
         if p:
             from pprint import pformat  # noqa: autoimport
 
             if s == " ":
                 s = "\n"
-            args = list(map(pformat, args))
+            values = list(map(pformat, values))
         if apply:
-            args = list(map(apply, args))
+            values = list(map(apply, values))
         logging.log(
             l,
             (str(t) + ":\n" if t is not None else "")
             + (str(m) + ":" + s if m is not None else "")
             + s.join(("%" + "sr"[r],) * n),
-            *args,
+            *values,
         )
-    if len(args) == 1:
-        return args[0]
+    if len(values) == 1:
+        return values[0]
     else:
-        return args
+        return values
 
 
 def prompt(msg="continue?", prompt=1, level=logging.DEBUG):
-    if logging.getLogger().isEnabledFor(level):
+    if _root_logger.isEnabledFor(level):
         if AOC_INTERACTIVE >= prompt:
             return input(msg)
 
@@ -64,20 +92,23 @@ def np_condense(s: Any) -> str:
     return str(s).replace(" ", "").replace("[", "").replace("]", "")
 
 
-def readfile(fn):
+# --- input readers and parsers ---
+
+
+def readfile(fn: str) -> Any:
     """Default input reader"""
     with open(fn) as fd:
         return fd.read()
 
 
-def read_pd_table(fn, *args, **kw):
+def read_pd_table(fn: str, *args, **kw) -> Any:
     """Read whitespace separated tabular data to a pandas dataframe"""
     import pandas as pd  # noqa: autoimport
 
     return pd.read_table(fn, *args, sep=r"\s+", header=None, **kw)
 
 
-def np_raw_table(input, offs=None, cmp=None, dtype="uint8"):
+def np_raw_table(input: str, offs=None, cmp=None, dtype="uint8"):
     """Transform raw tabular data to a 2d np.array
 
     does:
@@ -103,45 +134,10 @@ def np_raw_table(input, offs=None, cmp=None, dtype="uint8"):
     return table
 
 
-def mk_input_reader(
-    read=readfile, split=None, apply=None, transform=None
-) -> Callable[[str], tuple[Any, ...]]:
-    """Returns a function reading and optionally parsing an input file
-
-    readfile: filename -> str | Any
-    split: -> various modes to optionally split read input into structures
-    apply: called on all structure elements resulting from split or the whole
-    transform: optionally called in the end -> tuple of arguments to main function
-    """
-
-    def get_input(filename: str) -> tuple[Any, ...]:
-        input = read(filename)
-        match split:
-            case None:
-                input = apply(input)
-            case "fields":
-                input = [apply(x) for x in input.split()]
-            case "lines":
-                input = [apply(x) for x in input.splitlines()]
-            case "lines_fields":
-                input = [
-                    tuple(apply(x) for x in line.split()) for line in input.splitlines()
-                ]
-            case (ls, fs):
-                input = [
-                    tuple(apply(x) for x in line.split(fs)) for line in input.split(ls)
-                ]
-            case c:
-                input = [apply(x) for x in input.split(c)]
-        return transform(input)
-
-    read = _fix_lambda(read)
-    apply = _fix_lambda(apply)
-    transform = _fix_lambda(transform, lambda x: (x,))
-    return get_input
+# --- cli runner ---
 
 
-def mk_parser(day: int, loglevel):
+def mk_arg_parser(day: int, loglevel) -> ArgumentParser:
     parser = ArgumentParser(description=f"Run AOC example {day}")
     parser.add_argument(
         "--input",
@@ -179,32 +175,77 @@ def mk_parser(day: int, loglevel):
         choices=["OFF", "ERROR", "WARNING", "INFO", "DEBUG"],
         help="log level, overrides $LOGLEVEL",
     )
+    parser.add_argument(
+        "--show-input",
+        action="store_true",
+        default=False,
+        help="log parsed input on INFO",
+    )
     return parser
 
 
-def run_aoc(
-    aocf,
+def read_input(
+    filename: str, read=readfile, split=None, apply=None, transform=None
+) -> tuple[Any, ...]:
+    """Read and optionally parse/transform an input file
+
+    readfile: filename -> str | Any
+    split: -> various modes to optionally split read input into structures
+    apply: called on all structure elements resulting from split or the whole
+    transform: optionally called in the end -> tuple of arguments to main function
+    """
+
+    read = _fix_lambda(read)
+    apply = _fix_lambda(apply)
+    transform = _fix_lambda(transform, lambda x: (x,))
+
+    input = read(filename)
+
+    match split:
+        case None:
+            input = apply(input)
+        case "fields":
+            input = [apply(x) for x in input.split()]
+        case "lines":
+            input = [apply(x) for x in input.splitlines()]
+        case "lines_fields":
+            input = [
+                tuple(apply(x) for x in line.split()) for line in input.splitlines()
+            ]
+        case (ls, fs):
+            input = [
+                tuple(apply(x) for x in line.split(fs)) for line in input.split(ls)
+            ]
+        # todo: unused atm, let's treat strings as re patterns
+        case c:
+            input = [apply(x) for x in input.split(c)]
+
+    return transform(input)
+
+
+def run_aoc[T = int](
+    aocf: AOC[T],
     *,
-    day=None,
+    day: int = None,
     read=readfile,
     split=None,
     apply=None,
     transform=None,
     time=(1000, "ms"),
     np_printoptions=None,
-):
+) -> None:
     """Runs puzzle solving generator function aocf with appropriate input
+
+    Use --help or see mk_arg_parser for options taken from the command line.
 
     The day parameter is auto detected if the name of aocf ends in 2 digits,
     and is used to select defaults for the input files read.
 
-    The input file is read(), optionally split into lines and/or fields which
-    are mapped by appy(), then finally passed through transform() and provided
-    as multiple arguments to aocf.
+    The input file is read with read_input and related arguments, executed,
+    and the resulting tuple is passed to aocf as arguments.
 
-    The aocf function should yield its results when ready.
-
-    See --help or mk_parser for options taken from command line.
+    The aocf function should yield its results of type T when they become
+    available, any number is acceptable.
     """
 
     def lap_time(label="Time: "):
@@ -221,9 +262,7 @@ def run_aoc(
 
     t0 = t1 = t2 = timeit.default_timer()
     day = day or int(aocf.__name__[-2:])
-    # session = os.environ.get("SESSION")
-    loglevel = os.environ.get("LOGLEVEL", "INFO").upper()
-    cmdargs = mk_parser(day, loglevel).parse_args()
+    cmdargs = mk_arg_parser(day, LOGLEVEL).parse_args()
     assert not cmdargs.expect or not cmdargs.test, (
         "--expect and --test are incompatible"
     )
@@ -236,8 +275,6 @@ def run_aoc(
         level=100 if cmdargs.loglevel == "OFF" else getattr(logging, cmdargs.loglevel),
     )
 
-    aocf_args = mk_input_reader(read, split, apply, transform)(cmdargs.input)
-
     if cmdargs.test:
         with open(cmdargs.results) as fd:
             parts = fd.read().replace("\\\n", "\0").splitlines()
@@ -249,7 +286,14 @@ def run_aoc(
 
         np.set_printoptions(**np_printoptions)
 
-    info("")
+    aocf_args = read_input(cmdargs.input, read, split, apply, transform)
+
+    if cmdargs.show_input:
+        aocf_args = list(aocf_args)
+        info(f"\n🎄🎄🎄🎄  Input of {aocf.__name__}() 🎄🎄🎄🎄\n")
+        dbg(*aocf_args, p=True, l=logging.INFO)
+        info("")
+
     lap_time("Setup time: ")
 
     try:
