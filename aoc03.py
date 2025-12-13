@@ -2,10 +2,10 @@
 
 from funcy import autocurry, lmap, map
 
-from aoc_util import run_aoc
+from aoc_util import AOC, run_aoc
 
 
-def aoc03(banks: list[list[int]]):
+def aoc03(banks: list[list[int]]) -> AOC:
     @autocurry
     def max_joltage(digits, bank, start=0, acc=0):
         digits -= 1

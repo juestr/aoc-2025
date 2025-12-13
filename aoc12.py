@@ -35,7 +35,7 @@ def aoc12(shapes: np.typing.NDArray[np.uint8], regions: np.typing.NDArray[int]) 
         elif todo @ weights > np.prod(shape):
             return False
         else:
-            assert False, "unclear case, this would require a lot of work"
+            raise AssertionError("unclear case, this would require a lot of work")
 
     weights = np.sum(shapes, axis=(1, 2))
     yield sum(map(check_region, regions))

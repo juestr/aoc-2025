@@ -3,10 +3,10 @@
 import numpy as np
 import numpy.typing as npt
 
-from aoc_util import run_aoc
+from aoc_util import AOC, run_aoc
 
 
-def setup(input: str):
+def setup(input: str) -> AOC:
     p1, p2 = input.split("\n\n")
     return (
         np.fromstring(p1.replace("-", "\n"), sep="\n", dtype=int).reshape((-1, 2)),

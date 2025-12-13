@@ -2,10 +2,10 @@
 
 import numpy as np
 
-from aoc_util import run_aoc
+from aoc_util import AOC, run_aoc
 
 
-def aoc01(rotations: list[int]):
+def aoc01(rotations: list[int]) -> AOC:
     positions = np.add.accumulate([50, *rotations])
     zeros = np.logical_not(positions % 100)
     yield np.sum(zeros)

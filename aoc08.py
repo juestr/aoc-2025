@@ -4,10 +4,10 @@
 import numpy as np
 from scipy.spatial.distance import pdist
 
-from aoc_util import run_aoc
+from aoc_util import AOC, run_aoc
 
 
-def aoc08(boxes: np.typing.NDArray[int]):
+def aoc08(boxes: np.typing.NDArray[int]) -> AOC:
     def get_circuits_and_last_boxes(closest):
         circuits = np.arange(N, dtype=int)
         n = N

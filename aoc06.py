@@ -5,7 +5,7 @@ from itertools import islice, zip_longest
 import numpy as np
 from funcy import partition_by
 
-from aoc_util import run_aoc
+from aoc_util import AOC, run_aoc
 
 
 def setup(input: str):
@@ -13,7 +13,7 @@ def setup(input: str):
     return lines, ops.split()
 
 
-def aoc06(lines: list[str], ops: list[str]):
+def aoc06(lines: list[str], ops: list[str]) -> AOC:
     xs = np.loadtxt(lines, dtype=int)
     is_add = np.equal(ops, "+")
     yield np.sum(xs[:, is_add]) + np.sum(np.prod(xs[:, ~is_add], axis=0))

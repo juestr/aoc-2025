@@ -2,10 +2,10 @@
 
 import numpy as np
 
-from aoc_util import run_aoc
+from aoc_util import AOC, run_aoc
 
 
-def aoc09(tiles: np.typing.NDArray[int]):
+def aoc09(tiles: np.typing.NDArray[int]) -> AOC:
     triu0, triu1 = np.triu_indices(tiles.shape[0], k=1)
     # unique combinations of tiles, normalized cols <left_x top_y right_x bottom_y>
     rects = np.column_stack(tiles[[triu0, triu1]])
